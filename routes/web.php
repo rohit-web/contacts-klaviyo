@@ -20,11 +20,6 @@ Route::get('/', function () {
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
-
-Auth::routes();
-
-Route::get('/home', 'HomeController@index')->name('home');
-
-Auth::routes();
-
-Route::get('/home', 'HomeController@index')->name('home');
+Route::get('contacts', ['uses'=>'ContactController@contacts', 'as'=>'contact.index']);
+Route::post('contacts', ['uses'=>'ContactController@store', 'as'=>'contacts.create']);
+Route::post('upload', ['uses'=>'ContactController@upload', 'as'=>'contacts.upload']);
