@@ -21,6 +21,10 @@ class ContactController extends Controller
         $this->klaviyoHelperObj = $klaviyoHelperObj;
     }
 
+    /**
+     * contacts datatable ajax request
+     * @param $request
+     */
     public function contacts(Request $request)
     {
         if ($request->ajax()) {
@@ -44,6 +48,9 @@ class ContactController extends Controller
         return view('users');
     }
 
+    /**
+     * create a contacts base on the requested params and validate the required fields
+     */
     public function store(Request $request)
     {
 
@@ -69,6 +76,9 @@ class ContactController extends Controller
         return response()->json(['success' => 'Data is successfully added']);
     }
 
+    /**
+     * save the contacts
+     */
     private function saveContact($param)
     {
         if (!empty($param)) {
@@ -84,7 +94,9 @@ class ContactController extends Controller
         }
 
     }
-
+    /**
+     * upload CSV file in the directory and import in the table
+     */
     public function upload(CsvImportRequest $request)
     {
         try {
@@ -96,7 +108,9 @@ class ContactController extends Controller
 
             // Import CSV to Database
             $filepath = public_path($location . "/" . $file->getClientOriginalName());
-            $data = $this->csvToArrayAndCreateContact($filepath);
+            $this->csvToArrayAndCreateContact($filepath);
+
+            //TODO: remove uploaded file from directory
             return Redirect::back()->with('message', 'File is uploaded successfully.');
         } catch (\Exception $e) {
             return Redirect::back()->with('error', $e->getMessage());
@@ -104,6 +118,9 @@ class ContactController extends Controller
 
     }
 
+    /**
+     * convert CSV file data to array and store in the contacts table and sync by jobs
+     */
     private function csvToArrayAndCreateContact($filename = '', $delimiter = ',')
     {
         if (!file_exists($filename) || !is_readable($filename)) {
@@ -118,7 +135,7 @@ class ContactController extends Controller
             while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
                 if (!$header) {
                     $header = $row;
-                } else {
+                } else if(!empty($row[1])) {
                     $existCount = Contact::where('email', $row[1])->count();
                     if ($existCount < 1) {
                         $param['name'] = $row[0];

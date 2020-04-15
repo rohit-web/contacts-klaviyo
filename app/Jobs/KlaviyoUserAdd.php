@@ -2,12 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Util\KlaviyoHelper;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Util\KlaviyoHelper;
 
 class KlaviyoUserAdd implements ShouldQueue
 {
@@ -15,7 +15,7 @@ class KlaviyoUserAdd implements ShouldQueue
 
     protected $data;
     protected $url;
-    
+
     /**
      * Create a new job instance.
      *
@@ -34,7 +34,7 @@ class KlaviyoUserAdd implements ShouldQueue
      */
     public function handle(KlaviyoHelper $klaviyoHelperObj)
     {
-        \Log::error("queue has called");
+        \Log::info("queue has called");
         $response = $klaviyoHelperObj->store($this->url, $this->data);
     }
 }
