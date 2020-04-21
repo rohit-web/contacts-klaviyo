@@ -13,8 +13,9 @@ class CreateContactsTable extends Migration
             $table->id();
             $table->string('full_name');
             $table->string('email')->unique();
-            $table->integer('phone');
+            $table->string('phone');
             $table->integer('user_id');
+            $table->string('klaviyo_user_id')->nullable();
             $table->timestamps();
         });
     }

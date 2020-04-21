@@ -34,7 +34,12 @@ class KlaviyoUserAdd implements ShouldQueue
      */
     public function handle(KlaviyoHelper $klaviyoHelperObj)
     {
-        \Log::info("queue has called");
         $response = $klaviyoHelperObj->store($this->url, $this->data);
+        $responseArray = json_decode(json_encode($response), true);
+        if(!empty($responseArray)) {
+            \App\Contact::where('email', $responseArray[0]['email'])
+                        ->update(['klaviyo_user_id' => $responseArray[0]['id']]);
+        }
+        
     }
 }

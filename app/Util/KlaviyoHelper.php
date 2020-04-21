@@ -31,6 +31,15 @@ class KlaviyoHelper
     }
 
     /**
+     * get find by id
+     * @param $Id get list by ID
+     */
+    public function getRequest($url)
+    {
+        return $this->endpointRequest($url);
+    }
+
+    /**
      * endpoint request method,
      */
     public function endpointRequest($url)

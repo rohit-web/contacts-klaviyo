@@ -11,6 +11,7 @@ use Auth;
 use DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rule;
 
 class ContactController extends Controller
 {
@@ -37,7 +38,8 @@ class ContactController extends Controller
                 ->addColumn('action', function ($row) {
                     $btn = '';
                     if ($row->user_id == Auth::user()->id) {
-                        $btn = '<a href="javascript:void(0)" class="edit btn btn-danger btn-sm">Delete</a>';
+                        $btn = '<a href="javascript:void(0)" id="' . $row->id . '" class="edit btn btn-primary btn-sm">Edit</a>
+                        <a href="javascript:void(0)" class="edit btn btn-danger btn-sm">Delete</a>';
                     }
                     return $btn;
                 })
@@ -77,6 +79,50 @@ class ContactController extends Controller
     }
 
     /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'full_name' => 'required',
+            'email' => ['required',
+                Rule::unique('contacts')->ignore($request->id),
+            ],
+            'phone' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(array(
+                'success' => false,
+                'errors' => $validator->getMessageBag()->toArray(),
+
+            ));
+        }
+
+        try {
+            $contactObj = Contact::find($request->id);
+            $contactObj->full_name = $request->get('full_name');
+            $contactObj->email = $request->get('email');
+            $contactObj->phone = $request->get('phone');
+            $contactObj->save();
+
+            $param['name'] = $request->get('full_name');
+            $param['email'] = $request->get('email');
+            $param['phone'] = $request->get('phone');
+            $param['id'] = $contactObj->klaviyo_user_id;
+            KlaviyoUserAdd::dispatch($param, 'list/' . env('list_id') . '/members');
+        } catch (\Exception $e) {
+            throw new \Exception($e->getMessage(), 500);
+        }
+
+        return response()->json(['success' => 'Data is updated successfully']);
+    }
+
+    /**
      * save the contacts
      */
     private function saveContact($param)
@@ -92,8 +138,8 @@ class ContactController extends Controller
             $contactObj->save();
             unset($contactObj);
         }
-
     }
+
     /**
      * upload CSV file in the directory and import in the table
      */
@@ -120,6 +166,8 @@ class ContactController extends Controller
 
     /**
      * convert CSV file data to array and store in the contacts table and sync by jobs
+     * @param $filename filename with the path
+     * @param $delimiter file content delimiter
      */
     private function csvToArrayAndCreateContact($filename = '', $delimiter = ',')
     {
@@ -135,7 +183,7 @@ class ContactController extends Controller
             while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
                 if (!$header) {
                     $header = $row;
-                } else if(!empty($row[1])) {
+                } else if (!empty($row[1])) {
                     $existCount = Contact::where('email', $row[1])->count();
                     if ($existCount < 1) {
                         $param['name'] = $row[0];
@@ -149,5 +197,40 @@ class ContactController extends Controller
             }
             fclose($handle);
         }
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+
+        if ($id > 0) {
+            $contact = Contact::find($id);
+            return response()->json($contact);
+        }
+        throw new \Exception("Please provide valid contact ID", 500);
+
+    }
+
+    /**
+     * tarck the click event
+     */
+    public function trackEvent(Request $request)
+    {
+        $trakArray = [
+            "token" => "RiZmFm",
+            "event" => "clicked",
+            "customer_properties" => array(
+                "email" => Auth::user()->email,
+            ),
+            "time" => time(),
+        ];
+
+        $requestString = base64_encode(json_encode($trakArray));
+        return $this->klaviyoHelperObj->getRequest('https://a.klaviyo.com/api/track?data=' . $requestString);
     }
 }
